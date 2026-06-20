@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: phcn-fraud-detection
+    runtime: python
+    rootDir: phcn_fraud
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python ml/train_models.py"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        value: phcn-fraud-detection-secret-key
+      - key: PYTHON_VERSION
+        value: "3.11" 
