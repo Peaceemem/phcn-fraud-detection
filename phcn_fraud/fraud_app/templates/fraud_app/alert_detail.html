@@ -1,0 +1,96 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Alert #{{ alert.pk }}{% endblock %}
+{% block page_title %}Alert #{{ alert.pk }} — Investigation{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <!-- Left: Alert Info -->
+  <div class="col-md-5">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-bold bg-danger text-white">Fraud Alert Details</div>
+      <div class="card-body">
+        <table class="table table-sm">
+          <tr><th>Meter Number</th><td><code>{{ alert.customer.meter_number }}</code></td></tr>
+          <tr><th>Customer</th><td>{{ alert.customer.customer_name }}</td></tr>
+          <tr><th>Category</th><td>{{ alert.customer.customer_category }}</td></tr>
+          <tr><th>Zone</th><td>{{ alert.customer.geographic_zone }}</td></tr>
+          <tr><th>Alert Type</th><td><span class="badge bg-secondary">{{ alert.get_alert_type_display }}</span></td></tr>
+          <tr><th>Fraud Probability</th>
+            <td><strong class="text-danger">{{ alert.fraud_probability|floatformat:4 }}</strong></td></tr>
+          <tr><th>Risk Level</th>
+            <td>{% if alert.fraud_probability >= 0.75 %}<span class="badge badge-high">High</span>
+                {% elif alert.fraud_probability >= 0.5 %}<span class="badge badge-medium">Medium</span>
+                {% else %}<span class="badge badge-low">Low</span>{% endif %}</td></tr>
+          <tr><th>Token ID</th><td><code style="font-size:.75rem">{{ alert.transaction.token_id }}</code></td></tr>
+          <tr><th>Purchase Date</th><td>{{ alert.transaction.purchase_date|date:"d M Y H:i" }}</td></tr>
+          <tr><th>Units Purchased</th><td>{{ alert.transaction.purchased_units|floatformat:1 }} kWh</td></tr>
+          <tr><th>Amount Paid</th><td>₦{{ alert.transaction.payment_amount|floatformat:0 }}</td></tr>
+        </table>
+        <div class="alert alert-warning py-2">
+          <strong>Detection Reason:</strong><br>{{ alert.investigation_notes }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Investigation Status -->
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold">Update Investigation Status</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Status</label>
+            <select name="investigation_status" class="form-select">
+              <option value="Pending"   {% if alert.investigation_status == "Pending" %}selected{% endif %}>Pending Investigation</option>
+              <option value="Confirmed" {% if alert.investigation_status == "Confirmed" %}selected{% endif %}>Confirmed Fraud</option>
+              <option value="Dismissed" {% if alert.investigation_status == "Dismissed" %}selected{% endif %}>Dismissed (Not Fraud)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Investigation Notes</label>
+            <textarea name="investigation_notes" class="form-control" rows="4"
+              placeholder="Enter findings from field visit or desk review...">{{ alert.investigation_notes }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>Save Update
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Transaction History -->
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold">Customer Transaction History</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead><tr><th>Token ID</th><th>Units</th><th>Amount (₦)</th>
+                        <th>Fraud Score</th><th>Flagged</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for t in customer_history %}
+              <tr {% if t.is_flagged %}class="table-danger"{% endif %}>
+                <td><code style="font-size:.75rem">{{ t.token_id|slice:":12" }}...</code></td>
+                <td>{{ t.purchased_units|floatformat:1 }}</td>
+                <td>{{ t.payment_amount|floatformat:0 }}</td>
+                <td>
+                  {% if t.fraud_score %}
+                  <span class="badge {% if t.fraud_score >= 0.75 %}bg-danger{% elif t.fraud_score >= 0.5 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                    {{ t.fraud_score|floatformat:2 }}
+                  </span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>{% if t.is_flagged %}<i class="fas fa-flag text-danger"></i>{% else %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                <td class="text-muted small">{{ t.purchase_date|date:"d M Y" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center py-3 text-muted">No history available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

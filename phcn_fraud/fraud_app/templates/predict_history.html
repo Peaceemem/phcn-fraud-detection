@@ -1,0 +1,123 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Prediction History{% endblock %}
+{% block page_title %}Prediction History — All Saved Results{% endblock %}
+{% block content %}
+
+<!-- Search bar -->
+<div class="card shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="search" class="form-control" 
+             placeholder="Search by meter number or customer name..."
+             value="{{ search }}">
+      <button type="submit" class="btn btn-success px-4">
+        <i class="fas fa-search"></i>
+      </button>
+      {% if search %}
+      <a href="{% url 'predict_history' %}" class="btn btn-outline-secondary">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">
+      All Saved Predictions
+      {% if search %}<span class="text-muted fw-normal"> — results for "{{ search }}"</span>{% endif %}
+    </span>
+    <a href="{% url 'predict_single' %}" class="btn btn-sm btn-success">
+      <i class="fas fa-plus me-1"></i>New Prediction
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Customer Name</th>
+            <th>Meter Number</th>
+            <th>Category</th>
+            <th>Zone</th>
+            <th>Units (kWh)</th>
+            <th>Amount (₦)</th>
+            <th>Fraud Score</th>
+            <th>Status</th>
+            <th>Date Checked</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr>
+            <td><strong>{{ t.customer.customer_name }}</strong></td>
+            <td><code>{{ t.customer.meter_number }}</code></td>
+            <td><span class="badge bg-secondary">{{ t.customer.customer_category }}</span></td>
+            <td>{{ t.customer.geographic_zone|default:"—" }}</td>
+            <td>{{ t.purchased_units|floatformat:1 }}</td>
+            <td>₦{{ t.payment_amount|floatformat:0 }}</td>
+            <td>
+              {% if t.fraud_score is not None %}
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress" style="width:55px;height:7px;">
+                  <div class="progress-bar
+                    {% if t.fraud_score >= 0.75 %}bg-danger
+                    {% elif t.fraud_score >= 0.5 %}bg-warning
+                    {% else %}bg-success{% endif %}"
+                    style="width:{% widthratio t.fraud_score 1 100 %}%">
+                  </div>
+                </div>
+                <small class="fw-bold
+                  {% if t.fraud_score >= 0.75 %}text-danger
+                  {% elif t.fraud_score >= 0.5 %}text-warning
+                  {% else %}text-success{% endif %}">
+                  {% widthratio t.fraud_score 1 100 %}%
+                </small>
+              </div>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if t.is_flagged %}
+                <span class="badge bg-danger">
+                  <i class="fas fa-exclamation-triangle me-1"></i>FRAUD
+                </span>
+              {% else %}
+                <span class="badge bg-success">
+                  <i class="fas fa-check me-1"></i>CLEAN
+                </span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ t.created_at|date:"d M Y H:i" }}</td>
+            <td>
+              {% for alert in t.alerts.all %}
+              <a href="{% url 'alert_detail' alert.pk %}"
+                 class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-search"></i> Investigate
+              </a>
+              {% empty %}
+              <a href="{% url 'predict_single' %}"
+                 class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-redo"></i> Recheck
+              </a>
+              {% endfor %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="fas fa-inbox" style="font-size:2.5rem;opacity:.3"></i>
+              <p class="mt-2">No predictions saved yet.</p>
+              <a href="{% url 'predict_single' %}" class="btn btn-success">
+                Run Your First Prediction
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

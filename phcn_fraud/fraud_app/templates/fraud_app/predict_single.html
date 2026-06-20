@@ -1,0 +1,219 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Predict Single Transaction{% endblock %}
+{% block page_title %}Single Transaction Fraud Check{% endblock %}
+{% block content %}
+
+<!-- History button -->
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'predict_history' %}" class="btn btn-outline-primary">
+    <i class="fas fa-history me-2"></i>View Prediction History
+  </a>
+</div>
+
+<div class="row">
+  <!-- LEFT: Form -->
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold">Enter Customer & Transaction Details</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <!-- Customer Info -->
+          <div class="alert alert-info py-2 mb-3">
+            <i class="fas fa-info-circle me-1"></i>
+            Fill in customer details so the result is saved and can be reviewed later.
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Customer Name</label>
+              <input type="text" name="customer_name" class="form-control"
+                     placeholder="e.g. Chukwu Emeka" value="{{ form_data.customer_name|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Meter Number</label>
+              <input type="text" name="meter_number" class="form-control"
+                     placeholder="e.g. MTR001234" value="{{ form_data.meter_number|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Account Number</label>
+              <input type="text" name="account_number" class="form-control"
+                     placeholder="e.g. ACC001234" value="{{ form_data.account_number|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Customer Category</label>
+              <select name="customer_category" class="form-select">
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Industrial">Industrial</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Geographic Zone</label>
+              <input type="text" name="geographic_zone" class="form-control"
+                     placeholder="e.g. Ikeja" value="{{ form_data.geographic_zone|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Token ID (20 digits)</label>
+              <input type="text" name="token_id" class="form-control"
+                     placeholder="e.g. 12345678901234567890" value="{{ form_data.token_id|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Units Purchased (kWh)</label>
+              <input type="number" step="0.1" name="purchased_units" class="form-control"
+                     placeholder="e.g. 50" value="{{ form_data.purchased_units|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Amount Paid (₦)</label>
+              <input type="number" step="0.01" name="payment_amount" class="form-control"
+                     placeholder="e.g. 5000" value="{{ form_data.payment_amount|default:'' }}">
+            </div>
+          </div>
+
+          <hr>
+          <p class="fw-semibold text-muted small mb-2">FRAUD DETECTION FEATURES</p>
+
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Avg Monthly Consumption (kWh)</label>
+              <input type="number" step="0.1" name="avg_monthly_consumption" class="form-control"
+                     placeholder="e.g. 120" value="{{ form_data.avg_monthly_consumption|default:'' }}" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Consumption Variance</label>
+              <input type="number" step="0.1" name="consumption_variance" class="form-control"
+                     placeholder="e.g. 15" value="{{ form_data.consumption_variance|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Token Purchase Freq/month</label>
+              <input type="number" step="1" name="token_purchase_freq" class="form-control"
+                     placeholder="e.g. 2" value="{{ form_data.token_purchase_freq|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Purchased/Measured Ratio</label>
+              <input type="number" step="0.01" name="purchased_to_measured_ratio" class="form-control"
+                     placeholder="e.g. 1.05" value="{{ form_data.purchased_to_measured_ratio|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Night Consumption Ratio (0–1)</label>
+              <input type="number" step="0.01" min="0" max="1" name="night_consumption_ratio" class="form-control"
+                     placeholder="e.g. 0.25" value="{{ form_data.night_consumption_ratio|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Tamper Flag Count</label>
+              <input type="number" step="1" name="tamper_flag_count" class="form-control"
+                     placeholder="e.g. 0" value="{{ form_data.tamper_flag_count|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Authorized Vending</label>
+              <select name="authorized_vending" class="form-select">
+                <option value="1">1 — Authorized</option>
+                <option value="0">0 — Unauthorized</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Zone Fraud Rate (0.0–1.0)</label>
+              <input type="number" step="0.01" min="0" max="1" name="zone_fraud_rate" class="form-control"
+                     placeholder="e.g. 0.05" value="{{ form_data.zone_fraud_rate|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Consumption Anomaly Score</label>
+              <input type="number" step="0.1" name="consumption_anomaly_score" class="form-control"
+                     placeholder="e.g. 0.3" value="{{ form_data.consumption_anomaly_score|default:'' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Token Reuse Flag</label>
+              <select name="token_reuse_flag" class="form-select">
+                <option value="0">0 — Not reused</option>
+                <option value="1">1 — Reused</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success mt-4 w-100 py-2">
+            <i class="fas fa-search me-2"></i>Run Fraud Detection & Save Result
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Result -->
+  <div class="col-md-6">
+    {% if result %}
+    <div class="card shadow-sm border-{% if result.is_flagged %}danger{% else %}success{% endif %}">
+      <div class="card-header fw-bold
+        {% if result.is_flagged %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+        {% if result.is_flagged %}
+          <i class="fas fa-exclamation-triangle me-2"></i>FRAUD DETECTED
+        {% else %}
+          <i class="fas fa-check-circle me-2"></i>TRANSACTION CLEAN
+        {% endif %}
+      </div>
+      <div class="card-body">
+
+        <!-- Big probability number -->
+        <div class="text-center mb-3">
+          <div style="font-size:3.5rem;font-weight:700;
+            color:{% if result.fraud_probability >= 0.75 %}#e74c3c
+                  {% elif result.fraud_probability >= 0.5 %}#f39c12
+                  {% else %}#27ae60{% endif %}">
+            {% widthratio result.fraud_probability 1 100 %}%
+          </div>
+          <div class="text-muted">Fraud Probability</div>
+        </div>
+        <hr>
+
+        <!-- Details table -->
+        <table class="table table-sm">
+          <tr><th>Customer</th><td>{{ saved_customer.customer_name|default:"—" }}</td></tr>
+          <tr><th>Meter Number</th><td><code>{{ saved_customer.meter_number|default:"—" }}</code></td></tr>
+          <tr><th>Risk Level</th>
+            <td><span class="badge
+              {% if result.risk_level == 'High' %}bg-danger
+              {% elif result.risk_level == 'Medium' %}bg-warning text-dark
+              {% else %}bg-success{% endif %}">
+              {{ result.risk_level }}</span></td></tr>
+          <tr><th>Alert Type</th><td>{{ result.alert_type }}</td></tr>
+          <tr><th>Flagged</th>
+            <td>{% if result.is_flagged %}
+              <span class="text-danger fw-bold">Yes ⚠️</span>
+            {% else %}
+              <span class="text-success fw-bold">No ✅</span>
+            {% endif %}</td></tr>
+          <tr><th>Saved to DB</th>
+            <td><span class="text-success"><i class="fas fa-check-circle me-1"></i>Yes</span></td></tr>
+        </table>
+
+        <!-- Reason box -->
+        <div class="alert alert-{% if result.is_flagged %}danger{% else %}success{% endif %} py-2">
+          <strong>Reason:</strong> {{ result.top_reason }}
+        </div>
+
+        <!-- Action buttons -->
+        {% if saved_alert %}
+        <a href="{% url 'alert_detail' saved_alert.pk %}"
+           class="btn btn-outline-danger w-100 mb-2">
+          <i class="fas fa-search me-2"></i>Open Investigation Page
+        </a>
+        {% endif %}
+        <a href="{% url 'predict_history' %}" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-history me-2"></i>View All Saved Predictions
+        </a>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="card shadow-sm border-0 bg-light h-100 d-flex align-items-center justify-content-center">
+      <div class="text-center p-5 text-muted">
+        <i class="fas fa-search" style="font-size:4rem;opacity:.3"></i>
+        <p class="mt-3">Fill in the form and click<br><strong>Run Fraud Detection</strong><br>to see results here.</p>
+        <small>Results are automatically saved to the database.</small>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

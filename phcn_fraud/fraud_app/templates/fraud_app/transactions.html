@@ -1,0 +1,53 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transaction Records{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">All Transactions (latest 200)</span>
+    <a href="{% url 'upload_transactions' %}" class="btn btn-sm btn-success">
+      <i class="fas fa-upload me-1"></i>Upload CSV
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr><th>Token ID</th><th>Meter</th><th>Units (kWh)</th>
+              <th>Amount (₦)</th><th>Fraud Score</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr>
+            <td><code style="font-size:.8rem">{{ t.token_id }}</code></td>
+            <td>{{ t.customer.meter_number }}</td>
+            <td>{{ t.purchased_units|floatformat:1 }}</td>
+            <td>{{ t.payment_amount|floatformat:0 }}</td>
+            <td>
+              {% if t.fraud_score %}
+              <span class="badge {% if t.fraud_score >= 0.75 %}bg-danger{% elif t.fraud_score >= 0.5 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                {{ t.fraud_score|floatformat:2 }}
+              </span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if t.is_flagged %}
+                <span class="badge bg-danger"><i class="fas fa-flag me-1"></i>Flagged</span>
+              {% else %}
+                <span class="badge bg-success">Clean</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ t.purchase_date|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center py-4 text-muted">
+            No transactions yet. <a href="{% url 'upload_transactions' %}">Upload a CSV</a>
+            or <a href="{% url 'seed_demo_data' %}">load demo data</a>.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Upload CSV{% endblock %}
+{% block page_title %}Upload Transaction CSV{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold">Upload Prepaid Transaction File</div>
+      <div class="card-body">
+        <p class="text-muted">Upload a CSV file of transaction records. The system will automatically
+        run fraud detection on every row and flag suspicious transactions.</p>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Select CSV File</label>
+            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-upload me-2"></i>Upload & Run Fraud Detection
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold">Required CSV Columns</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Column</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>meter_number</code></td><td>Customer meter ID</td></tr>
+            <tr><td><code>token_id</code></td><td>20-digit STS token</td></tr>
+            <tr><td><code>purchased_units</code></td><td>kWh purchased</td></tr>
+            <tr><td><code>payment_amount</code></td><td>Amount in NGN</td></tr>
+            <tr><td><code>avg_monthly_consumption</code></td><td>Avg kWh/month</td></tr>
+            <tr><td><code>consumption_variance</code></td><td>Std deviation</td></tr>
+            <tr><td><code>token_purchase_freq</code></td><td>Purchases/month</td></tr>
+            <tr><td><code>purchased_to_measured_ratio</code></td><td>Units ratio</td></tr>
+            <tr><td><code>night_consumption_ratio</code></td><td>0.0–1.0</td></tr>
+            <tr><td><code>tamper_flag_count</code></td><td>Flag count</td></tr>
+            <tr><td><code>authorized_vending</code></td><td>1=Yes, 0=No</td></tr>
+            <tr><td><code>zone_fraud_rate</code></td><td>Zone rate 0.0–1.0</td></tr>
+            <tr><td><code>consumption_anomaly_score</code></td><td>Z-score</td></tr>
+            <tr><td><code>token_reuse_flag</code></td><td>1=Reused, 0=No</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

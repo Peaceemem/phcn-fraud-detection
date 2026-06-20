@@ -1,0 +1,39 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Login — PHCN Fraud Detection{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center"
+     style="background:linear-gradient(135deg,#1a1a2e,#006400);">
+  <div class="card shadow-lg" style="width:400px;border-radius:16px;">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <div style="font-size:3rem;color:#006400;"><i class="fas fa-bolt"></i></div>
+        <h4 class="fw-bold mt-2">PHCN FraudDetect</h4>
+        <p class="text-muted small">Power Holding Company of Nigeria<br>Revenue Assurance System</p>
+      </div>
+      {% for msg in messages %}
+      <div class="alert alert-danger py-2">{{ msg }}</div>
+      {% endfor %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Username</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" name="username" class="form-control" placeholder="Enter username" required autofocus>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+          <i class="fas fa-sign-in-alt me-2"></i>Login
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

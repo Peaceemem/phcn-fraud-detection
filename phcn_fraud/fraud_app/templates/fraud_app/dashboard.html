@@ -1,0 +1,162 @@
+{% extends "fraud_app/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- ── Stat Cards ── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card bg-info-dark">
+      <div class="label"><i class="fas fa-users me-1"></i>Total Customers</div>
+      <div class="value">{{ total_customers }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card bg-success-dark">
+      <div class="label"><i class="fas fa-receipt me-1"></i>Transactions</div>
+      <div class="value">{{ total_transactions }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card bg-danger-dark">
+      <div class="label"><i class="fas fa-exclamation-triangle me-1"></i>Fraud Alerts</div>
+      <div class="value">{{ total_alerts }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card bg-warning-dark">
+      <div class="label"><i class="fas fa-bullseye me-1"></i>Model Accuracy</div>
+      <div class="value">{{ model_accuracy }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts Row ── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-bold">Alert Type Distribution</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="alertTypeChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-bold">Risk Level Breakdown</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="riskChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-bold">Investigation Status</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="statusChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent Alerts Table ── -->
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">Recent Fraud Alerts</span>
+    <a href="{% url 'alert_list' %}" class="btn btn-sm btn-outline-danger">View All</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th><th>Meter Number</th><th>Alert Type</th>
+            <th>Fraud Probability</th><th>Risk</th><th>Status</th><th>Date</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alert in recent_alerts %}
+          <tr class="risk-{{ alert.fraud_probability|floatformat:0 }}">
+            <td>{{ alert.pk }}</td>
+            <td><code>{{ alert.customer.meter_number }}</code></td>
+            <td><span class="badge bg-secondary">{{ alert.get_alert_type_display }}</span></td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:6px;">
+                  <div class="progress-bar bg-danger" style="width:{{ alert.fraud_probability|floatformat:0 }}0%"></div>
+                </div>
+                {{ alert.fraud_probability|floatformat:2 }}
+              </div>
+            </td>
+            <td>
+              {% if alert.fraud_probability >= 0.75 %}
+                <span class="badge badge-high">High</span>
+              {% elif alert.fraud_probability >= 0.50 %}
+                <span class="badge badge-medium">Medium</span>
+              {% else %}
+                <span class="badge badge-low">Low</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if alert.investigation_status == "Confirmed" %}
+                <span class="badge bg-danger">{{ alert.investigation_status }}</span>
+              {% elif alert.investigation_status == "Dismissed" %}
+                <span class="badge bg-secondary">{{ alert.investigation_status }}</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">{{ alert.investigation_status }}</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ alert.created_at|date:"d M Y" }}</td>
+            <td><a href="{% url 'alert_detail' alert.pk %}" class="btn btn-sm btn-outline-primary">Investigate</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">
+            No alerts yet. <a href="{% url 'seed_demo_data' %}">Load demo data</a> to get started.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Alert Type Pie Chart
+new Chart(document.getElementById("alertTypeChart"), {
+  type: "pie",
+  data: {
+    labels: {{ alert_type_labels|safe }},
+    datasets: [{ data: {{ alert_type_counts|safe }},
+      backgroundColor: ["#e74c3c","#f39c12","#3498db","#9b59b6"] }]
+  },
+  options: { plugins: { legend: { position:"bottom" } } }
+});
+
+// Risk Donut Chart
+new Chart(document.getElementById("riskChart"), {
+  type: "doughnut",
+  data: {
+    labels: ["High Risk","Medium Risk","Low Risk"],
+    datasets: [{ data: [{{ high_risk }},{{ medium_risk }},{{ low_risk }}],
+      backgroundColor: ["#e74c3c","#f39c12","#27ae60"] }]
+  },
+  options: { plugins: { legend: { position:"bottom" } } }
+});
+
+// Status Bar Chart
+new Chart(document.getElementById("statusChart"), {
+  type: "bar",
+  data: {
+    labels: ["Pending","Confirmed","Dismissed"],
+    datasets: [{ label:"Alerts",
+      data: [{{ pending_alerts }},{{ confirmed_fraud }},
+             {{ total_alerts|add:"-"|add:pending_alerts|add:"-"|add:confirmed_fraud }}],
+      backgroundColor: ["#f39c12","#e74c3c","#95a5a6"] }]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+});
+</script>
+{% endblock %}
